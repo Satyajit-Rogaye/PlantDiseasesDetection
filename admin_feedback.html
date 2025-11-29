@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>User Feedback</title>
+
+  <style>
+    body{font-family:Inter,Arial;background:#f6faf6;margin:0}
+    .container{max-width:1200px;margin:30px auto;padding:16px}
+    .back{margin-bottom:20px;color:#2b7a2b;font-weight:700}
+    .fb-card{
+      background:#fff;
+      border-radius:10px;
+      margin-bottom:14px;
+      padding:14px;
+      border:1px solid #d9ebd9;
+      box-shadow:0 4px 14px rgba(0,0,0,.04);
+    }
+    .label{color:#1b4d1b;font-size:1rem;font-weight:700}
+    .meta{font-size:0.85rem;color:#6b7280;margin:4px 0}
+    .text{white-space:pre-wrap;font-size:0.95rem;color:#222;margin-top:6px}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a class="back" href="{{ url_for('admin_dashboard') }}">← Back</a>
+  <h2>💬 User Feedback</h2><br>
+
+  {% if feedback_records %}
+    {% for fb in feedback_records %}
+      <div class="fb-card">
+        <div class="label">
+          Prediction: {{ fb.label }} (Record ID: {{ fb.id }})
+        </div>
+
+        <div class="meta">
+          From <strong>{{ fb.feedback_user }}</strong>
+          — About upload by <strong>{{ fb.username }}</strong>
+          — {{ fb.feedback_time.split('T')[0] }}
+        </div>
+
+        <div class="text">{{ fb.feedback_text }}</div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>No feedback found.</p>
+  {% endif %}
+</div>
+
+</body>
+</html>

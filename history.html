@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title data-i18n="page_title">History</title>
+  <style>
+    :root{
+      --accent:#2b7a2b;
+      --muted:#6b7280;
+      --bg:#f6faf6;
+      --card:#fff;
+      --thumb-border: #d9ebd9;
+    }
+    body{font-family:Inter, system-ui, Arial;background:var(--bg);margin:0;padding:18px}
+    .container{max-width:1100px;margin:0 auto}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .btn-logout{background:#fff;border:1px solid #e6f2ea;padding:8px 12px;border-radius:8px;cursor:pointer;text-decoration:none;color:var(--muted);font-weight:600}
+    .grid{display:flex;flex-wrap:wrap;gap:18px}
+    .history-card{width:270px; min-width:200px; border-radius:12px;padding:10px;border:2px solid var(--thumb-border); box-sizing:border-box;background:var(--card); display:flex;flex-direction:column;align-items:stretch}
+    .history-card img{width:100%;height:140px;object-fit:cover;border-radius:8px}
+    .small{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <a href="{{ url_for('user_dashboard') }}" data-i18n="back_to_dashboard">← Back to dashboard</a>
+      </div>
+      <div>
+        <a href="{{ url_for('logout') }}" class="btn-logout" data-i18n="logout">Logout</a>
+      </div>
+    </div>
+
+    <h2 data-i18n="history_heading">My Upload History</h2>
+
+    <div class="grid" role="list" aria-label="History list">
+      {% if records %}
+        {% for r in records %}
+          {% set fname = r.image.split('/',1)[1] if '/' in r.image else r.image %}
+          <div class="history-card" role="listitem">
+            <img src="{{ url_for('uploaded_file', filename=fname) }}" alt="Thumbnail">
+            <div style="margin-top:10px; font-weight:700; color:#1b4d1b;">{{ r.label }}</div>
+            <div class="small">{{ r.timestamp.split('T')[0] }}</div>
+            <div style="margin-top:8px;">
+              <a href="{{ url_for('prediction_result', record_id=r.id) }}" style="text-decoration:none; color:var(--accent); font-weight:700" data-i18n="view_link">View</a>
+            </div>
+            {% if r.lang %}
+              <div style="margin-top:8px; font-size:0.85rem; color:var(--muted)"><strong data-i18n="lang_label">Lang:</strong> {{ r.lang|upper }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="small" data-i18n="no_history">No history available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const TRANSLATIONS = {
+        en: {
+          page_title: "History",
+          back_to_dashboard: "← Back to dashboard",
+          logout: "Logout",
+          history_heading: "My Upload History",
+          view_link: "View",
+          no_history: "No history available.",
+          lang_label: "Lang:"
+        },
+        hi: {
+          page_title: "इतिहास",
+          back_to_dashboard: "← डैशबोर्ड पर वापस",
+          logout: "लॉग आउट",
+          history_heading: "मेरा अपलोड इतिहास",
+          view_link: "देखें",
+          no_history: "कोई इतिहास उपलब्ध नहीं है।",
+          lang_label: "भाषा:"
+        },
+        mr: {
+          page_title: "इतिहास",
+          back_to_dashboard: "← डॅशबोर्डवर परत",
+          logout: "लॉग आउट",
+          history_heading: "माझे अपलोड इतिहास",
+          view_link: "पहा",
+          no_history: "कोणताही इतिहास उपलब्ध नाही.",
+          lang_label: "भाषा:"
+        }
+      };
+
+      function applyTranslations(lang) {
+        const map = TRANSLATIONS[lang] || TRANSLATIONS['en'];
+        document.querySelectorAll('[data-i18n]').forEach(node => {
+          const key = node.getAttribute('data-i18n');
+          if (!key) return;
+          const val = map[key];
+          if (val === undefined) return;
+          node.textContent = val;
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function(){
+        let initial = 'en';
+        {% if lang is defined and lang %}
+          initial = "{{ lang }}";
+        {% endif %}
+        applyTranslations(initial);
+      });
+    })();
+  </script>
+</body>
+</html>

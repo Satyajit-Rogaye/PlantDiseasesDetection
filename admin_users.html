@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Users</title>
+
+  <style>
+    body{font-family:Inter,Arial;background:#f6faf6;margin:0}
+    .container{max-width:1200px;margin:30px auto;padding:16px}
+    a{text-decoration:none}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+      border-radius:10px;
+      overflow:hidden;
+      box-shadow:0 6px 20px rgba(0,0,0,.04);
+    }
+    th,td{
+      padding:10px 12px;
+      border-bottom:1px solid #e9efe9;
+    }
+    th{background:#e6f2ea;color:#1b4d1b;font-weight:700}
+    tr:last-child td{border-bottom:none;}
+
+    .back{margin-bottom:20px;display:inline-block;color:#2b7a2b;font-weight:700}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a class="back" href="{{ url_for('admin_dashboard') }}">← Back</a>
+  <h2>👥 Manage Users</h2><br>
+
+  {% if users %}
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Role</th>
+      </tr>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No users found.</p>
+  {% endif %}
+</div>
+
+</body>
+</html>

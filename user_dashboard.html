@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    :root{
+      --accent:#2b7a2b;
+      --muted:#6b7280;
+      --bg:#f6faf6;
+      --card:#fff;
+      --box-border: #cfe9cfe6;
+      --thumb-border: #d9ebd9;
+    }
+
+    body{
+      font-family:Inter,system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background:var(--bg);
+      margin:0;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:1200px;margin:20px auto;padding:16px}
+    .navbar{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
+    .brand{font-weight:800;color:var(--accent);font-size:1.15rem}
+    .nav-actions{display:flex;gap:12px;align-items:center}
+    .btn-logout{background:#fff;border:1px solid #e6f2ea;padding:8px 12px;border-radius:8px;cursor:pointer;text-decoration:none;color:var(--muted);font-weight:600}
+    .lang-select{display:flex;gap:8px;align-items:center;font-weight:700}
+    .lang-select a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px;cursor:pointer}
+    .lang-select a.active{background:var(--accent);color:white}
+
+    /* Settings dropdown */
+    .settings-wrapper{position:relative;}
+    .settings-btn{
+      background:#fff;
+      border:1px solid #e6f2ea;
+      border-radius:999px;
+      width:36px;height:36px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;
+      font-size:18px;
+    }
+    .settings-menu{
+      position:absolute;
+      top:42px;right:0;
+      background:#fff;
+      border-radius:10px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.12);
+      border:1px solid #e6f2ea;
+      min-width:190px;
+      padding:6px 0;
+      display:none;
+      z-index:50;
+    }
+    .settings-menu a{
+      display:block;
+      padding:8px 14px;
+      text-decoration:none;
+      color:#111827;
+      font-size:0.95rem;
+    }
+    .settings-menu a:hover{
+      background:#f3f4ff;
+    }
+    .settings-menu .danger{
+      color:#b91c1c;
+    }
+
+    .boxes{display:flex;gap:14px;align-items:stretch;margin-top:18px}
+    .box{
+      flex:1;background:var(--card);border-radius:12px;padding:18px;
+      box-shadow:0 10px 28px rgba(0,0,0,0.04);
+      border:2px solid var(--box-border);
+      min-height:140px;display:flex;flex-direction:column;
+      justify-content:space-between;transition:transform .12s ease, box-shadow .12s ease
+    }
+    .box.clickable{cursor:pointer}
+    .box:hover{transform:translateY(-4px);box-shadow:0 18px 38px rgba(0,0,0,0.06)}
+    .box h3{margin:0 0 8px 0}
+    .box p{margin:0;color:var(--muted)}
+    .small{color:var(--muted);font-size:0.95rem}
+
+    .recent-row{display:flex; gap:18px; align-items:stretch; justify-content:center; overflow-x:auto; padding:8px 6px}
+    .history-card{width:270px; min-width:200px; border-radius:12px;padding:10px;border:2px solid var(--thumb-border); box-sizing:border-box;background:var(--card); display:flex;flex-direction:column;align-items:stretch; transition:transform .12s}
+    .history-card:hover{transform:translateY(-4px)}
+    .history-card img{width:100%;height:130px;object-fit:cover;border-radius:8px}
+
+    .section-title{text-align:center;margin:28px 0 12px 0;color:#1b4d1b;font-weight:800}
+    .preview{min-height:160px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px dashed #e6f2ea;background:#fbfff9;padding:12px}
+    input[type=file]{width:100%}
+    button.upload-btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+
+    @media (max-width:980px){
+      .boxes{flex-direction:column}
+      .history-card{width:48%; min-width:48%}
+    }
+    @media (max-width:640px){
+      .history-card{width:75%;min-width:75%}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+      <!-- Brand text is marked for translation via data-i18n -->
+      <div class="brand" data-i18n="brand">
+        User Dashboard — Welcome, <strong>{{ username }}</strong>
+      </div>
+
+      <div class="nav-actions">
+        <!-- language selector -->
+        <div class="lang-select" aria-label="Language selector">
+          <a href="{{ url_for('set_language', lang='en') }}"
+             data-lang="en"
+             class="{{ 'active' if lang=='en' else '' }}">EN</a>
+          <a href="{{ url_for('set_language', lang='hi') }}"
+             data-lang="hi"
+             class="{{ 'active' if lang=='hi' else '' }}">HI</a>
+          <a href="{{ url_for('set_language', lang='mr') }}"
+             data-lang="mr"
+             class="{{ 'active' if lang=='mr' else '' }}">MR</a>
+        </div>
+
+        <!-- Settings dropdown instead of direct logout -->
+        <div class="settings-wrapper">
+          <button type="button" id="settingsToggle" class="settings-btn" title="Settings">
+            ⚙
+          </button>
+       <div id="settingsMenu" class="settings-menu">
+  <a href="{{ url_for('edit_profile') }}" data-i18n="edit_profile">
+    👤 Edit Profile
+  </a>
+
+  <a href="{{ url_for('support') }}" data-i18n="CSW">
+    💬 Customer Support (WhatsApp)
+  </a>
+
+  <a href="tel:9372383929" data-i18n="Call_Support">
+    📞 Call Support: 9372383929
+  </a>
+
+  <a href="{{ url_for('logout') }}" class="danger" data-i18n="logout">
+    🚪 Logout
+  </a>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Top row: 3 boxes -->
+    <div class="boxes" role="region" aria-label="Quick overview">
+      <!-- Recent uploads -->
+      <a href="{{ url_for('history') }}" style="text-decoration:none;color:inherit;">
+        <div class="box clickable" role="button" aria-label="Open recent uploads">
+          <div>
+            <h3 data-i18n="recent_uploads_title">Recent uploads</h3>
+            <p class="small" data-i18n="recent_uploads_desc">
+              Click to view all uploaded images in a gallery.
+            </p>
+          </div>
+          <div class="small" style="align-self:flex-end" data-i18n="view_all">View all →</div>
+        </div>
+      </a>
+
+      <!-- Quick actions -->
+      <div class="box" role="region" aria-label="Quick actions">
+        <div>
+          <h3 data-i18n="quick_actions_title">My History</h3>
+          <p class="small" data-i18n="quick_actions_desc">See All History.</p>
+        </div>
+
+        <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+          <a href="{{ url_for('history') }}"
+             style="background:#e6f2ea; color:var(--accent); text-align:center; padding:10px; border-radius:8px; text-decoration:none; font-weight:700;"
+             data-i18n="history_btn">
+             History
+          </a>
+        </div>
+      </div>
+
+      <!-- Upload leaf image -->
+      <div class="box" role="region" aria-label="Upload leaf image">
+        <div>
+          <h3 data-i18n="upload_title">Upload leaf image</h3>
+          <p class="small" data-i18n="upload_desc">
+            Choose a clear photo to get a prediction on a result page.
+          </p>
+        </div>
+
+        <form id="uploadForm" action="{{ url_for('predict_file') }}" method="post"
+              enctype="multipart/form-data" style="margin-top:10px">
+          <input type="file" id="fileInput" name="file" accept="image/*" required>
+          <div style="height:10px"></div>
+          <button id="uploadBtn" class="upload-btn" type="submit" data-i18n="upload_btn">
+            Upload &amp; Predict
+          </button>
+        </form>
+
+        <div style="height:10px"></div>
+        <div id="preview" class="preview">
+          <span class="small" data-i18n="image_preview">Image preview</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent uploads list (bottom) -->
+    <div style="margin-top:30px;">
+      <h2 class="section-title" data-i18n="recent_uploads_heading">Recent uploads (latest)</h2>
+
+      <div class="recent-row" role="list" aria-label="Recent uploads thumbnails">
+        {% if history %}
+          {% for r in history[:5] %}
+            {% set fname = r.image.split('/',1)[1] if '/' in r.image else r.image %}
+            <div class="history-card" role="listitem">
+              <img src="{{ url_for('uploaded_file', filename=fname) }}" alt="Uploaded image thumbnail">
+              <div style="margin-top:8px; font-weight:700; font-size:1rem; color:#1b4d1b;">
+                {{ r.label }}
+              </div>
+              <div class="small" style="margin-top:6px">{{ r.timestamp.split('T')[0] }}</div>
+              <div style="margin-top:10px;">
+                <a href="{{ url_for('prediction_result', record_id=r.id) }}"
+                   class="small"
+                   style="text-decoration:none; color:var(--accent); font-weight:700;"
+                   data-i18n="view_link">View</a>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="small" data-i18n="no_recent">No recent uploads yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JS: preview, settings dropdown, language switching -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      /* ---------------------------
+         Image preview + upload button
+         (unchanged behavior)
+      --------------------------- */
+      const input = document.getElementById('fileInput');
+      const preview = document.getElementById('preview');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const form = document.getElementById('uploadForm');
+
+      if (input) {
+        input.addEventListener('change', () => {
+          const file = input.files[0];
+          if (!file) {
+            preview.innerHTML = '<span class="small" data-i18n="image_preview">Image preview</span>';
+            return;
+          }
+          const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/bmp'];
+          if (!allowed.includes(file.type)) {
+            preview.innerHTML = '<span class="small" style="color:#b02a37">Invalid file type</span>';
+            input.value = '';
+            return;
+          }
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.onload = () => URL.revokeObjectURL(img.src);
+          img.style.maxWidth = '100%';
+          img.style.borderRadius = '8px';
+          preview.innerHTML = '';
+          preview.appendChild(img);
+        });
+      }
+
+      if (form) {
+        form.addEventListener('submit', () => {
+          uploadBtn.disabled = true;
+          uploadBtn.textContent = 'Uploading…';
+        });
+      }
+
+      /* ---------------------------
+         Settings dropdown
+      --------------------------- */
+      const settingsToggle = document.getElementById('settingsToggle');
+      const settingsMenu = document.getElementById('settingsMenu');
+
+      function closeSettings() {
+        if (settingsMenu) settingsMenu.style.display = 'none';
+      }
+      function openSettings() {
+        if (settingsMenu) settingsMenu.style.display = 'block';
+      }
+
+      if (settingsToggle && settingsMenu) {
+        settingsToggle.addEventListener('click', function() {
+          if (settingsMenu.style.display === 'block') {
+            closeSettings();
+          } else {
+            openSettings();
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!settingsMenu.contains(e.target) && !settingsToggle.contains(e.target)) {
+            closeSettings();
+          }
+        });
+      }
+
+      /* ---------------------------
+         Language translation logic
+         (fixed so it works every time)
+      --------------------------- */
+
+      const TRANSLATIONS = {
+        en: {
+          brand: `User Dashboard — Welcome, <strong>{{ username }}</strong>`,
+          logout: 'Logout',
+          recent_uploads_title: 'Recent uploads',
+          recent_uploads_desc: 'Click to view all uploaded images in a gallery.',
+          view_all: 'View all →',
+          quick_actions_title: 'My History',
+          quick_actions_desc: 'See All History.',
+          history_btn: 'History',
+          upload_title: 'Upload leaf image',
+          upload_desc: 'Choose a clear photo to get a prediction on a result page.',
+          upload_btn: 'Upload & Predict',
+          image_preview: 'Image preview',
+          recent_uploads_heading: 'Recent uploads (latest)',
+          view_link: 'View',
+          no_recent: 'No recent uploads yet.',
+          edit_profile: 'Edit Profile',
+          CSW: 'Customer Support(Whatsapp)',
+          Call_Support: 'Call Support',
+          logout: 'Logout'
+        },
+        hi: {
+          brand: `उपयोगकर्ता डैशबोर्ड — स्वागत है, <strong>{{ username }}</strong>`,
+          logout: 'लॉग आउट',
+          recent_uploads_title: 'हाल की अपलोड',
+          recent_uploads_desc: 'गैलरी में सभी अपलोड की गई छवियाँ देखने के लिए क्लिक करें।',
+          view_all: 'सभी देखें →',
+          quick_actions_title: 'मेरा इतिहास',
+          quick_actions_desc: 'सभी इतिहास देखें',
+          history_btn: 'इतिहास',
+          upload_title: 'पत्ती की छवि अपलोड करें',
+          upload_desc: 'परिणाम पृष्ठ पर भविष्यवाणी प्राप्त करने के लिए स्पष्ट फ़ोटो चुनें।',
+          upload_btn: 'अपलोड और भविष्यवाणी',
+          image_preview: 'छवि पूर्वावलोकन',
+          recent_uploads_heading: 'हाल की अपलोड (नवीनतम)',
+          view_link: 'देखें',
+          no_recent: 'अभी तक कोई हालिया अपलोड नहीं।',
+          edit_profile: 'प्रोफ़ाइल संपादित करें',
+          CSW: 'ग्राहक सहायता (व्हाट्सएप)',
+          Call_Support: 'कॉल सहायता',
+          logout: 'लॉगआउट'
+        },
+        mr: {
+          brand: `युजर डॅशबोर्ड — स्वागत आहे, <strong>{{ username }}</strong>`,
+          logout: 'लॉग आउट',
+          recent_uploads_title: 'अलीकडील अपलोड',
+          recent_uploads_desc: 'गॅलरीमध्ये सर्व अपलोड केलेल्या प्रतिमा पाहण्यासाठी क्लिक करा.',
+          view_all: 'सर्व पहा →',
+          quick_actions_title: 'माझा इतिहास',
+          quick_actions_desc: 'सर्व इतिहास पाहा.',
+          history_btn: 'इतिहास',
+          upload_title: 'पानाची प्रतिमा अपलोड करा',
+          upload_desc: 'परिणाम पृष्ठावर भाकीत मिळवण्यासाठी एक स्पष्ट फोटो निवडा.',
+          upload_btn: 'अपलोड & भाकीत',
+          image_preview: 'प्रतिमा पूर्वदर्शनी',
+          recent_uploads_heading: 'अलीकडील अपलोड (नवीनतम)',
+          view_link: 'पाहा',
+          no_recent: 'अजून कोणतीही अलीकडील अपलोड नाहीत.',
+          logout: 'लॉगआउट',
+          Call_Support: 'कॉल समर्थन',
+          CSW: 'ग्राहक समर्थन (WhatsApp)',
+          edit_profile: 'प्रोफाईल संपादित करा'
+        }
+      };
+
+      function applyTranslations(lang) {
+        const map = TRANSLATIONS[lang] || TRANSLATIONS.en;
+        document.querySelectorAll('[data-i18n]').forEach(node => {
+          const key = node.getAttribute('data-i18n');
+          if (!key || !(key in map)) return;
+          const val = map[key];
+          // If text contains HTML tags (brand), use innerHTML
+          if (/<[^>]+>/.test(val)) {
+            node.innerHTML = val;
+          } else {
+            node.textContent = val;
+          }
+        });
+      }
+
+      function setActiveLangUI(lang) {
+        document.querySelectorAll('.lang-select a').forEach(a => {
+          if ((a.dataset.lang || '').toLowerCase() === lang.toLowerCase()) {
+            a.classList.add('active');
+          } else {
+            a.classList.remove('active');
+          }
+        });
+      }
+
+      // click handlers on language buttons
+      document.querySelectorAll('.lang-select a').forEach(a => {
+        a.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          const chosen = (this.dataset.lang || 'en').toLowerCase();
+
+          // Update UI instantly on this page
+          applyTranslations(chosen);
+          setActiveLangUI(chosen);
+
+          // Persist to server session so other pages see it
+          fetch(`/set_language/${encodeURIComponent(chosen)}`, {
+            method: 'GET',
+            credentials: 'same-origin'
+          }).catch(() => {
+            // ignore network errors; UI already changed
+          });
+        });
+      });
+
+      // Initial load: use server-side lang if provided
+      let initialLang = "{{ lang or 'en' }}";
+      if (!TRANSLATIONS[initialLang]) initialLang = 'en';
+      applyTranslations(initialLang);
+      setActiveLangUI(initialLang);
+    });
+  </script>
+
+</body>
+</html>

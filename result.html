@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prediction Result</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <style>
+    :root{
+      --accent: #2b7a2b;
+      --muted: #6b7280;
+      --bg: #f6faf6;
+      --card: #fff;
+      --card-border: #d9ebd9;
+    }
+    body { font-family: Inter, system-ui, Arial; background: var(--bg); margin: 0; padding: 0; }
+    .page-container { max-width:1200px; margin:25px auto; padding:10px 20px; }
+    .top-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+    .logout-btn { background:#fff; border:1px solid #dcdcdc; padding:8px 16px; border-radius:8px; color:#333; font-weight:600; text-decoration:none;}
+    .grid { display:grid; grid-template-columns:1.2fr 1fr 0.7fr; gap:22px; align-items:start; }
+    .card { background:var(--card); padding:18px; border-radius:12px; box-shadow:0px 8px 20px rgba(0,0,0,0.05); border:2px solid var(--card-border); }
+    .leaf-img { width:100%; border-radius:10px; max-height:380px; object-fit:cover; margin-bottom:15px; display:block; }
+    .label { font-size:1.5rem; font-weight:800; color:#114d19; }
+    .confidence-bar-bg { height:12px; background:#e4f2e4; border-radius:10px; margin-top:6px; overflow:hidden; }
+    .confidence-bar-fill { height:12px; background:linear-gradient(90deg,#7ee08a,#2b7a2b); width:0%; transition:width .6s ease; }
+    .status-badge { margin-top:12px; padding:8px 14px; border-radius:20px; font-weight:600; display:inline-block; }
+    .healthy { background:#d4f8d4; color:#1b7a1b; }
+    .diseased { background:#ffd6d6; color:#b30000; }
+    .meta-row { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    .advice { margin-top:14px; color:#333; line-height:1.45; white-space:pre-wrap; }
+    .advice-sect { margin-top:10px; padding:12px; border-radius:8px; background:#fbfff9; border:1px solid #eef7ee; }
+    .advice-sect h4 { margin:0 0 6px 0; color:#114d19; }
+    .feedback-box textarea { width:100%; height:110px; padding:10px; font-size:1rem; border-radius:8px; border:1px solid #d1d1d1; resize:vertical; margin-top:10px; }
+    .btn { background:var(--accent); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:1rem; margin-top:12px; font-weight:700; }
+    .quick-actions a { display:block; margin-top:12px; text-decoration:none; color:#114d19; font-weight:600; }
+    .lang-buttons { display:flex; gap:8px; margin-top:10px; align-items:center; }
+    .lang-buttons button { padding:6px 10px; border-radius:8px; border:1px solid #e6f2ea; background:#fff; cursor:pointer; font-weight:700; color:var(--muted); }
+    .lang-buttons button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    @media (max-width:960px) { .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <a href="{{ url_for('user_dashboard') }}" data-i18n="back_dashboard">← Back to dashboard</a>
+      <a class="logout-btn" href="{{ url_for('logout') }}" data-i18n="logout">Logout</a>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+      <!-- LEFT: Prediction -->
+      <div class="card">
+        <img src="{{ url_for('uploaded_file', filename=record.image.split('/',1)[1]) }}" class="leaf-img" alt="Uploaded image">
+
+        <div style="margin-top:10px;">
+          <div style="font-weight:700; color:#114d19;" data-i18n="predicted_label">Predicted:</div>
+          <div class="label" id="predLabel">{{ record.label }}</div>
+        </div>
+
+        <div class="meta-row">
+          <div style="font-weight:600;" data-i18n="confidence_prefix">Confidence: <span id="confText">{{ record.confidence }}</span>%</div>
+          <div style="margin-left:auto;">
+            {% if record.lang %}
+              <div style="font-weight:700;padding:6px 10px;border-radius:8px;background:#f0f7f0;border:1px solid #e6f2ea;color:#2b7a2b">
+                {{ record.lang|upper }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="confidence-bar-bg" aria-hidden="true">
+          {% set conf_val = (record.confidence if record.confidence is number else (record.confidence|float)) %}
+          {% if conf_val is not defined %}{% set conf_val = 0 %}{% endif %}
+          {% set conf_clamped = 0 if conf_val < 0 else (100 if conf_val > 100 else conf_val) %}
+          <div class="confidence-bar-fill" id="confFill" style="width: {{ conf_clamped }}%;"></div>
+        </div>
+
+        <div>
+          {% if record.health_status and record.health_status|lower == 'healthy' %}
+            <div class="status-badge healthy" data-i18n="status_healthy">🟢 Healthy</div>
+          {% elif record.health_status and record.health_status|lower == 'diseased' %}
+            <div class="status-badge diseased" data-i18n="status_diseased">🔴 Diseased — Action Needed</div>
+          {% else %}
+            <div class="status-badge diseased" data-i18n="status_unknown">⚪ Status Unknown</div>
+          {% endif %}
+        </div>
+
+        <!-- Advice header + language selector -->
+        <div style="margin-top:20px; font-weight:700; display:flex; align-items:center; justify-content:space-between;">
+          <div data-i18n="advice_label">Advice</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:0.95rem; color:var(--muted)">Language:</div>
+            <div class="lang-buttons" role="tablist" aria-label="Choose advice language">
+              <button type="button" data-lang="en" id="btn-en">EN</button>
+              <button type="button" data-lang="hi" id="btn-hi">HI</button>
+              <button type="button" data-lang="mr" id="btn-mr">MR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advice content (populated by JS) -->
+        <div id="adviceContainer" class="advice" aria-live="polite">
+          <div class="advice-sect" id="sect-symptoms" style="display:none">
+            <h4 data-i18n="symptoms_h4">Symptoms</h4>
+            <div id="symptomsText"></div>
+          </div>
+          <div class="advice-sect" id="sect-actions" style="display:none">
+            <h4 data-i18n="actions_h4">Immediate actions</h4>
+            <div id="actionsText"></div>
+          </div>
+          <div class="advice-sect" id="sect-prevent" style="display:none">
+            <h4 data-i18n="prevent_h4">Prevention</h4>
+            <div id="preventText"></div>
+          </div>
+          <div class="advice-sect" id="sect-treatment" style="display:none">
+            <h4 data-i18n="treatment_h4">Treatment / Notes</h4>
+            <div id="treatmentText"></div>
+          </div>
+          <div id="advicePlain" style="display:none; margin-top:8px; color:#333;"></div>
+        </div>
+      </div>
+
+      <!-- MIDDLE: Feedback -->
+      <div class="card feedback-box">
+        <h3 data-i18n="feedback_title">Feedback</h3>
+        <p style="margin-top:-5px;" data-i18n="feedback_hint">Tell us if the prediction was correct.</p>
+        <form action="{{ url_for('feedback') }}" method="POST">
+          <input type="hidden" name="record_id" value="{{ record.id }}">
+          <textarea name="feedback" placeholder="{{ '' }}" data-i18n="feedback_hint">{% if record.feedback %}{{ record.feedback.text }}{% endif %}</textarea>
+          <button type="submit" class="btn" data-i18n="feedback_send">Send Feedback</button>
+        </form>
+
+        {% if record.feedback %}
+          <div style="margin-top:16px; font-size:0.92rem; color:#555;">
+            <strong>Previous feedback:</strong>
+            <div style="margin-top:6px; white-space:pre-wrap;">{{ record.feedback.text }}</div>
+            <div style="margin-top:6px; color:#888; font-size:0.85rem;">By {{ record.feedback.user }} at {{ record.feedback.time.split('T')[0] }}</div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- RIGHT: Quick Actions -->
+      <div class="card quick-actions">
+        <h3>Quick actions</h3>
+        <a href="{{ url_for('user_dashboard') }}" data-i18n="quick_upload">Upload another image</a>
+        <a href="{{ url_for('history') }}" data-i18n="quick_history">View my history</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- small server bridge + lang-switch include (must be on every page you want translations on) -->
+  <script>
+    // pass server session language into the client script (no server logic changed)
+    window.__SERVER_LANG__ = "{{ lang if (lang is defined) else 'en' }}";
+    // expose record.advice safely will be read by the existing advice JS in this template
+    // (your existing advice JS uses {{ record.advice | tojson }}, so leave as-is below if you have it)
+  </script>
+  <script src="{{ url_for('static', filename='lang_switch.js') }}"></script>
+
+  <!-- keep your existing advice/behavior JS (if present) - unchanged -->
+  <script>
+    // ---------------------------
+    // existing advice/DOM JS remains as you had it
+    // ---------------------------
+    let adviceRaw = null;
+    try {
+      adviceRaw = {{ record.advice | tojson | safe }};
+    } catch (e) { adviceRaw = null; }
+
+    let serverLang = null;
+    try { serverLang = {{ (lang if (lang is defined) else None) | tojson }}; } catch(e) { serverLang = null; }
+
+    function $(id){ return document.getElementById(id); }
+    function splitToSections(text){
+      if (!text || typeof text !== 'string') return null;
+      let parts = text.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+      if (parts.length >= 3) {
+        return { symptoms: parts[0] || '', actions: parts[1] || '', prevention: parts[2] || '', treatment: parts.slice(3).join('\n\n') || '' };
+      }
+      parts = text.split(/(?<=[.!?।])\s+/u).map(s=>s.trim()).filter(Boolean);
+      return { symptoms: parts[0] || '', actions: parts[1] || '', prevention: parts[2] || '', treatment: parts.slice(3).join(' ') || '' };
+    }
+
+    function setActiveLangButton(code){
+      const btns = document.querySelectorAll('.lang-buttons button');
+      btns.forEach(b => {
+        if ((b.dataset.lang || b.getAttribute('data-lang')) === code) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+    }
+
+    function renderAdviceForLang(code){
+      setActiveLangButton(code);
+      let adviceText = "";
+      if (adviceRaw === null || adviceRaw === undefined) adviceText = "";
+      else if (typeof adviceRaw === 'string') adviceText = adviceRaw;
+      else if (typeof adviceRaw === 'object') adviceText = adviceRaw[code] || adviceRaw['en'] || Object.values(adviceRaw)[0] || "";
+      else adviceText = String(adviceRaw);
+
+      const plain = $('advicePlain');
+      const sSym = $('sect-symptoms');
+      const sAct = $('sect-actions');
+      const sPrev = $('sect-prevent');
+      const sTreat = $('sect-treatment');
+
+      if (plain) { plain.style.display='none'; plain.textContent=''; }
+      [sSym,sAct,sPrev,sTreat].forEach(el => { if (el) el.style.display='none'; });
+
+      if (!adviceText || adviceText.trim().length === 0) {
+        if (plain) { plain.style.display='block'; plain.textContent = (window.__applyLang ? (window.__applyLang, '') : "No advice available for this prediction."); }
+        return;
+      }
+
+      const sections = splitToSections(adviceText);
+      if (!sections) { if (plain) { plain.style.display='block'; plain.textContent = adviceText; } return; }
+
+      const totalLen = (sections.symptoms + sections.actions + sections.prevention + sections.treatment).length;
+      if (totalLen < 40) { if (plain) { plain.style.display='block'; plain.textContent = adviceText; } return; }
+
+      if (sections.symptoms && $('symptomsText')) { sSym.style.display='block'; $('symptomsText').textContent = sections.symptoms; }
+      if (sections.actions && $('actionsText')) { sAct.style.display='block'; $('actionsText').textContent = sections.actions; }
+      if (sections.prevention && $('preventText')) { sPrev.style.display='block'; $('preventText').textContent = sections.prevention; }
+      if (sections.treatment && $('treatmentText')) { sTreat.style.display='block'; $('treatmentText').textContent = sections.treatment; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      const btns = document.querySelectorAll('.lang-buttons button');
+      btns.forEach(b => {
+        if (!b.dataset.lang) {
+          const t = (b.textContent || '').trim().toLowerCase();
+          b.dataset.lang = (t === 'hi') ? 'hi' : (t === 'mr' ? 'mr' : 'en');
+        }
+        b.addEventListener('click', function(){
+          const code = (this.dataset.lang || 'en').toLowerCase();
+          if (adviceRaw && typeof adviceRaw === 'object' && (adviceRaw[code] || adviceRaw['en'])) {
+            renderAdviceForLang(code);
+            return;
+          }
+          // fallback to server route to persist language in session and reload
+          window.location.assign('/set_language/' + encodeURIComponent(code));
+        });
+      });
+
+      // initial selection: prefer serverLang -> record.lang -> 'en'
+      let initial = 'en';
+      if (serverLang) initial = serverLang;
+      {% if record.lang is defined and record.lang %}
+        initial = {{ record.lang|tojson }};
+      {% endif %}
+      const avail = Array.from(document.querySelectorAll('.lang-buttons button')).map(x=>x.dataset.lang);
+      if (!avail.includes(initial)) initial = (avail[0] || 'en');
+      renderAdviceForLang(initial);
+
+      // confidence bar
+      try {
+        const fill = document.getElementById('confFill');
+        const text = document.getElementById('confText');
+        let val = parseFloat(text.textContent || '0');
+        if (isNaN(val)) val = 0;
+        val = Math.max(0, Math.min(100, val));
+        fill.style.width = val + '%';
+        text.textContent = val;
+      } catch(e){}
+    });
+  </script>
+</body>
+</html>

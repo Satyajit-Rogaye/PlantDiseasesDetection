@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+
+  <style>
+    body{
+      font-family: Inter, Arial;
+      margin:0;
+      background:#f6faf6;
+    }
+    .navbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 20px;
+      background:#2b7a2b;
+      color:#fff;
+    }
+    .logout{
+      padding:6px 12px;
+      text-decoration:none;
+      color:#fff;
+      border:1px solid rgba(255,255,255,.5);
+      border-radius:6px;
+      font-weight:600;
+    }
+
+    .container{max-width:1200px;margin:30px auto;padding:20px}
+
+    .card{
+      background:white;
+      padding:18px;
+      border-radius:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,.05);
+      border:1px solid #d9ebd9;
+      margin-bottom:20px;
+    }
+
+    .button-link{
+      display:block;
+      text-align:center;
+      padding:12px;
+      border-radius:10px;
+      font-weight:700;
+      text-decoration:none;
+      color:#2b7a2b;
+      border:2px solid #d9ebd9;
+      transition:.2s;
+    }
+    .button-link:hover{
+      background:#2b7a2b;
+      color:white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+      <h2>🌿 Admin Dashboard</h2>
+      <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+  </div>
+
+  <div class="container">
+    <h2>Hello, {{ username }}</h2>
+    <p>You are logged in as <strong>Admin</strong>.</p><br>
+
+    <div class="card">
+      <a class="button-link" href="{{ url_for('admin_users') }}">👥 Manage Users</a>
+    </div>
+
+    <div class="card">
+      <a class="button-link" href="{{ url_for('admin_feedback') }}">💬 View User Feedback</a>
+    </div>
+
+  </div>
+</body>
+</html>
